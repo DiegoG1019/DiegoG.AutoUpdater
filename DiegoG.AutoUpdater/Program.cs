@@ -68,12 +68,21 @@ public static class Program
             }
 
             var exampleDir = Path.Combine(optionsDir, "examples");
+            Directory.CreateDirectory(exampleDir);
             Log.Information("Creating example files in {dir}", exampleDir);
 
             var exampleFileTxt = Path.Combine(optionsDir, "README.txt");
             var exampleFileJson = Path.Combine(exampleDir, "options.example.json");
             if (File.Exists(exampleFileTxt) is false)
-                File.WriteAllText(exampleFileTxt, "Thanks for using my tool! A quick explanation:\n - options.json is created automatically on first run\n - It's an /array/ of JSON objects, not a single object\n - options.example.json contains an example for a SINGLE options object, and when thrown into options.json, should be put inside an array.\n - An array in JSON is defined by an opening bracket '[' and a closing bracket ']'. Inside of it, any number of JSON objects can exist, each separated by a comma. Don't put a comma for the last one.");
+                File.WriteAllText(exampleFileTxt, """
+                    Thanks for using my tool! A quick explanation:
+                         - options.json is created automatically on first run
+                         - It's an /array/ of JSON objects, not a single object
+                         - options.example.json contains an example for a SINGLE options object, and when thrown into options.json, should be put inside an array.
+                         - An array in JSON is defined by an opening bracket '[' and a closing bracket ']'. Inside of it, any number of JSON objects can exist, each separated by a comma. Don't put a comma for the last one.
+                    
+                    You can check out the 'examples' directory for, well, examples!
+                    """);
 
             if (File.Exists(exampleFileJson) is false)
                 using (var examplestream = File.Create(exampleFileJson))
@@ -101,7 +110,7 @@ public static class Program
                         MessagePipeName = "Unused.",
                         PermitKillProcess = true,
                         SourceName = "github-release or something else idk",
-                        SourceOptions = JsonDocument.Parse("{ \"IsThisAJsonObject\": true, \"CanIPutWhateverHere\": true }"),
+                        SourceOptions = JsonDocument.Parse("{ \"IsThisAJsonObject\": true, \"CanIPutWhateverHere\": true, \"ShouldIPutStuffHereFollowingOneOfTheExamples\": true }"),
                         TargetDirectory = "C:\\TheDirectory\\IWantTo\\Update"
                     }, options: JsonOptions);
 
@@ -154,7 +163,7 @@ public static class Program
                     if (example is not null)
                     {
                         using var exampleFileStream = File.OpenWrite(exampleFile);
-                        JsonSerializer.Serialize(example, example.GetType(), JsonOptions);
+                        JsonSerializer.Serialize(exampleFileStream, example, example.GetType(), JsonOptions);
                     }
                 }
             }
