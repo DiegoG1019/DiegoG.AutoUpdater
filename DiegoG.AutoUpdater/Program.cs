@@ -67,8 +67,11 @@ public static class Program
                     JsonSerializer.Serialize(strm, Array.Empty<UpdatingOptions>(), options: JsonOptions);
             }
 
+            var exampleDir = Path.Combine(optionsDir, "examples");
+            Log.Information("Creating example files in {dir}", exampleDir);
+
             var exampleFileTxt = Path.Combine(optionsDir, "README.txt");
-            var exampleFileJson = Path.Combine(optionsDir, "options.example.json");
+            var exampleFileJson = Path.Combine(exampleDir, "options.example.json");
             if (File.Exists(exampleFileTxt) is false)
                 File.WriteAllText(exampleFileTxt, "Thanks for using my tool! A quick explanation:\n - options.json is created automatically on first run\n - It's an /array/ of JSON objects, not a single object\n - options.example.json contains an example for a SINGLE options object, and when thrown into options.json, should be put inside an array.\n - An array in JSON is defined by an opening bracket '[' and a closing bracket ']'. Inside of it, any number of JSON objects can exist, each separated by a comma. Don't put a comma for the last one.");
 
@@ -126,6 +129,34 @@ public static class Program
 
                 UpdateSources.Add(attr.SourceName, () => (IUpdateSource)(Activator.CreateInstance(type)
                         ?? throw new TypeLoadException($"Could not load a new instance of type {type.FullName}")));
+
+                var descFile = Path.Combine(exampleDir, $"{attr.SourceName}.description.txt");
+                var exampleFile = Path.Combine(exampleDir, $"{attr.SourceName}.example.json");
+
+                if (File.Exists(descFile) is false)
+                {
+                    var descProp = type.GetProperty(nameof(IUpdateSource.Description), BindingFlags.Static | BindingFlags.Public);
+                    Debug.Assert(descProp is not null, $"IUpdateSource.Description property of {type} is null despite being compile-time guaranteed to exist");
+                    var descValue = descProp.GetValue(null);
+                    Debug.Assert(descValue is not string, $"IUpdateSource.Description of type {type} does not return a string, but a {descValue!.GetType()}");
+
+                    var desc = descValue as string;
+                    if (string.IsNullOrWhiteSpace(desc) is false)
+                        File.WriteAllText(descFile, desc);
+                }
+
+                if (File.Exists(exampleFile) is false)
+                {
+                    var exampleProp = type.GetProperty(nameof(IUpdateSource.ExampleOptions), BindingFlags.Static | BindingFlags.Public);
+                    Debug.Assert(exampleProp is not null, $"IUpdateSource.ExampleOptions property of {type} is null despite being compile-time guaranteed to exist");
+                    var example = exampleProp.GetValue(null);
+
+                    if (example is not null)
+                    {
+                        using var exampleFileStream = File.OpenWrite(exampleFile);
+                        JsonSerializer.Serialize(example, example.GetType(), JsonOptions);
+                    }
+                }
             }
         }
         catch(Exception e)

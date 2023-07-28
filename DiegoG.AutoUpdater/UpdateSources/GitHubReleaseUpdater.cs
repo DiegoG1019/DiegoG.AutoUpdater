@@ -170,4 +170,26 @@ public class GitHubReleaseUpdater : IUpdateSource
 
         return hash;
     }
+
+    public static object ExampleOptions { get; } = new GitHubReleaseUpdaterOptions(
+        "Ryan",
+        "Reynolds.API",
+        0,
+        "MyToken",
+        "TheFileYouActuallyWant.zip",
+        false,
+        false
+    );
+
+    public static string Description { get; } = """
+        This Updater goes into the target repository's releases and creates a hash based on the tag of the latest release by date.
+        Options:
+            - RepositoryOwner: Do not set if RepositoryId is set. This and RepositoryOwner must both be set if either is set. The owner of the repository.
+            - RepositoryName: Do not set if RepositoryId is set. This and RepositoryName must both be set if either is set. The actual name of the repository
+            - RepositoryId: Do not set if both RepositoryOwner and RepositoryName are set. The Id of the repository.
+            - AccessToken: In case of a private repository, a GitHub API Access Token with permissions to access the repository is required.
+            - TargetFile: The name of the file this tool is looking for. No other file will be downloaded.
+            - ZipsToSubdirectory: 'true' if each zip file should be decompressed to a sub directory with the same name as the zip file. 'false' if all zip files are decompressed to the target directory directly.
+            - DecompressZipFiles: 'true' if zip files should be decompressed. If 'false' no zip files at all will be decompressed.
+        """;
 }
