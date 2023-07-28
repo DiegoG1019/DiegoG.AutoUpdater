@@ -5,6 +5,8 @@ using System.Reflection;
 using System.Runtime.Intrinsics.X86;
 using System.Text;
 using System.Text.Json;
+using CliWrap;
+using CliWrap.Buffered;
 using DiegoG.AutoUpdater.UpdateSources;
 using Serilog;
 
@@ -88,7 +90,11 @@ public static class Program
                             "Sometransientfile.txt",
                             "PleaseKillMe.help"
                         },
-                        ExecuteCommand = "Command --to-execute --at the-end",
+                        AfterUpdateCommands = new CommandOptions[]
+                        {
+                            new CommandOptions("some_command", "\"Somewhere\" -r -m", true),
+                            new CommandOptions("some_second_command", null, false)
+                        },
                         MessagePipeName = "Unused.",
                         PermitKillProcess = true,
                         SourceName = "github-release or something else idk",
@@ -242,6 +248,38 @@ public static class Program
                         continue;
                     }
 
+                    // local function
+
+                    Task Execute(CommandOptions options)
+                    {
+                        var cli = Cli.Wrap(options.Command);
+                        if (options.Arguments is string cmd_args)
+                            cli = cli.WithArguments(cmd_args);
+
+                        return cli.ExecuteBufferedAsync();
+                    }
+
+                    // ----
+
+                    Log.Debug("Running pre-update commands");
+                    if (options.BeforeUpdateCommands is CommandOptions[] pre_cmds)
+                    {
+                        for (int i = 0; i < pre_cmds.Length; i++)
+                        {
+                            if (pre_cmds[i].Safe) 
+                                try
+                                {
+                                    await Execute(pre_cmds[i]);
+                                }
+                                catch(Exception e)
+                                {
+                                    Log.Error(e, "Command #{i} failed to execute");
+                                }
+                            else
+                                await Execute(pre_cmds[i]);
+                        }
+                    }
+
                     Log.Debug("Finding processes under the name of {name}", options.ProcessName);
                     var proc = Process.GetProcessesByName(options.ProcessName);
 
@@ -307,11 +345,24 @@ public static class Program
                         continue;
                     }
 
-                    if (options.ExecuteCommand is not null)
-                        Process.Start(new ProcessStartInfo(options.ExecuteCommand)
+                    Log.Debug("Running post-update commands");
+                    if (options.AfterUpdateCommands is CommandOptions[] post_cmds)
+                    {
+                        for (int i = 0; i < post_cmds.Length; i++)
                         {
-                            UseShellExecute = options.UseShellExecute
-                        });
+                            if (post_cmds[i].Safe)
+                                try
+                                {
+                                    await Execute(post_cmds[i]);
+                                }
+                                catch (Exception e)
+                                {
+                                    Log.Error(e, "Command #{i} failed to execute");
+                                }
+                            else
+                                await Execute(post_cmds[i]);
+                        }
+                    }
 
                     Log.Information("Succesfully updated {process} via {source}", options.ProcessName, options.SourceName);
                     successes++;
