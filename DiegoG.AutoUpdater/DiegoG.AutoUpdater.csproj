@@ -10,7 +10,9 @@
 
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.6.4" />
-    <PackageReference Include="Octokit" Version="7.0.1" />
+    <PackageReference Include="Google.Apis.Drive.v3" Version="1.61.0.3120" />
+    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="2.3.2" />
+    <PackageReference Include="Octokit" Version="7.1.0" />
     <PackageReference Include="Serilog" Version="3.0.1" />
     <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
